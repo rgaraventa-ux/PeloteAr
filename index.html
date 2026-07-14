@@ -1802,6 +1802,46 @@ body {
 <div class="toast" id="toast"></div>
 
 <script>
+// ═══════════════════════════════ API FIREBASE ═══
+
+const API = 'https://botpanel-production-c941.up.railway.app/api/pelotear';
+
+async function apiGet(path) {
+  try {
+    const res = await fetch(API + path);
+    const data = await res.json();
+    return data.ok ? data.data : null;
+  } catch (e) {
+    console.warn('API sin conexión, usando datos locales');
+    return null;
+  }
+}
+
+async function apiPost(path, body) {
+  try {
+    const res = await fetch(API + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    return data.ok ? data : null;
+  } catch (e) {
+    console.warn('API sin conexión');
+    return null;
+  }
+}
+
+async function apiDelete(path) {
+  try {
+    const res = await fetch(API + path, { method: 'DELETE' });
+    const data = await res.json();
+    return data.ok;
+  } catch (e) {
+    return false;
+  }
+}
+
 // ═══════════════════════════════ ESTADO GLOBAL ═══
 
 // ── UTILIDADES (van primero porque todo lo demás las necesita) ──
@@ -1901,14 +1941,45 @@ function doLogout() {
 
 // ═══════════════════════════════ INIT ═══
 
-function initApp() {
+async function initApp() {
   updateClock();
   setInterval(updateClock, 1000);
+  updateDashDate();
+
+  // Cargar config del servidor
+  const config = await apiGet('/config');
+  if (config && config.nombre) {
+    STATE.config = { ...STATE.config, ...config };
+    const brand = document.getElementById('brand-tap');
+    if (brand) brand.innerHTML = config.nombre.split(' ').map((w,i) => i === 0 ? w : `<span>${w}</span>`).join(' ');
+  }
+
+  // Cargar productos del servidor
+  const productos = await apiGet('/productos');
+  if (productos && productos.length > 0) {
+    STATE.productos = productos;
+  }
+
+  // Cargar reservas de hoy del servidor
+  const reservas = await apiGet('/reservas/' + hoy());
+  if (reservas && reservas.length > 0) {
+    STATE.reservas = reservas;
+    // Actualizar estado de canchas según reservas reales
+    STATE.canchas.forEach(c => {
+      c.estado = estadoCanchaDemo(c.id, reservas);
+    });
+  }
+
+  // Cargar ventas de hoy
+  const ventas = await apiGet('/ventas/' + hoy());
+  if (ventas && ventas.length > 0) {
+    STATE.ventasBuffet = ventas;
+  }
+
   updateDashboard();
   renderCanchas();
   renderReservas();
   renderProductos();
-  updateDashDate();
 }
 
 function updateClock() {
@@ -2117,25 +2188,31 @@ function calcularPrecio() {
   return total;
 }
 
-function guardarReserva() {
+async function guardarReserva() {
   const nombre = document.getElementById('res-nombre').value.trim();
   const tel = document.getElementById('res-tel').value.trim();
   const fecha = document.getElementById('res-fecha').value;
   const hora = document.getElementById('res-hora').value;
   const duracion = parseInt(document.getElementById('res-duracion').value);
+  const canchaIdx = document.getElementById('res-cancha').selectedIndex;
+  const canchaId = STATE.canchas[canchaIdx]?.id || 1;
 
   if (!nombre || !fecha || !hora) { showToast('Completá todos los campos'); return; }
 
   const precio = calcularPrecio();
   const nueva = {
-    id: Date.now(),
-    canchaId: 1,
+    canchaId,
     nombre, tel, fecha, hora, duracion, precio,
     pago: STATE.currentPago,
     estado: 'confirmada'
   };
 
+  // Guardar en Firebase
+  const result = await apiPost('/reservas', nueva);
+  nueva.id = result?.id || Date.now();
+
   STATE.reservas.push(nueva);
+  STATE.canchas.forEach(c => { c.estado = estadoCanchaDemo(c.id, STATE.reservas); });
   updateDashboard();
   renderCanchas();
   renderReservas();
@@ -2224,7 +2301,7 @@ function cobrarBuffet() {
   openModal('modal-cobro-buffet');
 }
 
-function confirmarCobroBuffet() {
+async function confirmarCobroBuffet() {
   const total = Object.entries(STATE.carrito).reduce((s, [id, qty]) => {
     const p = STATE.productos.find(p => p.id === parseInt(id));
     return s + (p ? p.precio * qty : 0);
@@ -2237,14 +2314,21 @@ function confirmarCobroBuffet() {
   });
 
   // Registrar venta
-  STATE.ventasBuffet.push({
-    id: Date.now(),
+  const venta = {
     items: { ...STATE.carrito },
     total,
     pago: STATE.currentPago,
     fecha: hoy(),
     hora: new Date().toTimeString().slice(0, 5)
-  });
+  };
+
+  // Guardar en Firebase
+  const result = await apiPost('/ventas', venta);
+  venta.id = result?.id || Date.now();
+  STATE.ventasBuffet.push(venta);
+
+  // Guardar productos actualizados (stock)
+  await apiPost('/productos', { lista: STATE.productos });
 
   STATE.carrito = {};
   updateDashboard();
@@ -2253,7 +2337,7 @@ function confirmarCobroBuffet() {
   showToast('Venta registrada ✅', 'green');
 }
 
-function guardarProducto() {
+async function guardarProducto() {
   const nombre = document.getElementById('prod-nombre').value.trim();
   const precio = parseInt(document.getElementById('prod-precio').value);
   const stock = parseInt(document.getElementById('prod-stock').value) || 0;
@@ -2263,6 +2347,7 @@ function guardarProducto() {
   if (!nombre || !precio) { showToast('Completá nombre y precio'); return; }
 
   STATE.productos.push({ id: Date.now(), nombre, precio, stock, emoji, alerta });
+  await apiPost('/productos', { lista: STATE.productos });
   renderProductos();
   closeModal('modal-producto');
   showToast('Producto agregado ✅', 'green');
@@ -2337,11 +2422,14 @@ function cambiarDeporte(deporte) {
   showToast(`Deporte cambiado a ${nombres[deporte]}`);
 }
 
-function guardarConfig() {
+async function guardarConfig() {
   STATE.config.nombre = document.getElementById('config-nombre').value || STATE.config.nombre;
   STATE.config.wa = document.getElementById('config-wa').value;
   STATE.config.nocturnoDesde = document.getElementById('config-nocturno').value;
   STATE.config.precioDia = parseInt(document.getElementById('config-precio-dia').value) || STATE.config.precioDia;
+
+  // Guardar en Firebase
+  await apiPost('/config', STATE.config);
   showToast('Configuración guardada ✅', 'green');
 }
 
@@ -2525,7 +2613,7 @@ function abrirEditarProducto(id) {
   openModal('modal-editar-producto');
 }
 
-function guardarEdicionProducto() {
+async function guardarEdicionProducto() {
   const id = parseInt(document.getElementById('edit-prod-id').value);
   const p = STATE.productos.find(p => p.id === id);
   if (!p) return;
@@ -2536,6 +2624,7 @@ function guardarEdicionProducto() {
   p.emoji = document.getElementById('edit-prod-emoji').value || p.emoji;
   p.alerta = parseInt(document.getElementById('edit-prod-alerta').value) || p.alerta;
 
+  await apiPost('/productos', { lista: STATE.productos });
   renderProductos();
   closeModal('modal-editar-producto');
   showToast('Producto actualizado ✅', 'green');
