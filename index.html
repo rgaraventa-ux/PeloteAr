@@ -1894,10 +1894,10 @@ const STATE = {
   currentCancha: null,
   reservasFecha: new Date(),
   canchas: [
-    { id: 1, nombre: 'Cancha 1', deporte: 'Fútbol 7', estado: estadoCanchaDemo(1, DEMO_RESERVAS), precioDia: 15000, precioNoche: 20000 },
-    { id: 2, nombre: 'Cancha 2', deporte: 'Fútbol 7', estado: estadoCanchaDemo(2, DEMO_RESERVAS), precioDia: 15000, precioNoche: 20000 }
+    { id: 1, nombre: 'Cancha 1', deporte: 'Fútbol 7', estado: 'libre', precioDia: 15000, precioNoche: 20000 },
+    { id: 2, nombre: 'Cancha 2', deporte: 'Fútbol 7', estado: 'libre', precioDia: 15000, precioNoche: 20000 }
   ],
-  reservas: [...DEMO_RESERVAS],
+  reservas: [],  // Se cargan desde Firebase
   productos: [
     { id: 1, nombre: 'Coca-Cola 500ml', precio: 1500, stock: 18, alerta: 6, emoji: '🥤' },
     { id: 2, nombre: 'Agua mineral', precio: 800, stock: 4, alerta: 5, emoji: '💧' },
@@ -1908,10 +1908,10 @@ const STATE = {
     { id: 7, nombre: 'Cerveza lata', precio: 2500, stock: 24, alerta: 6, emoji: '🍺' },
     { id: 8, nombre: 'Energizante', precio: 2800, stock: 2, alerta: 4, emoji: '🔋' },
   ],
-  ventasBuffet: [...DEMO_VENTAS_BUFFET],
+  ventasBuffet: [],  // Se cargan desde Firebase
   carrito: {},
   config: {
-    nombre: 'Complejo Los Pinos',
+    nombre: '',
     wa: '',
     nocturnoDesde: '19:00',
     precioDia: 15000,
@@ -1946,40 +1946,50 @@ async function initApp() {
   setInterval(updateClock, 1000);
   updateDashDate();
 
-  // Cargar config del servidor
-  const config = await apiGet('/config');
-  if (config && config.nombre) {
-    STATE.config = { ...STATE.config, ...config };
-    const brand = document.getElementById('brand-tap');
-    if (brand) brand.innerHTML = config.nombre.split(' ').map((w,i) => i === 0 ? w : `<span>${w}</span>`).join(' ');
-  }
-
-  // Cargar productos del servidor
-  const productos = await apiGet('/productos');
-  if (productos && productos.length > 0) {
-    STATE.productos = productos;
-  }
-
-  // Cargar reservas de hoy del servidor
-  const reservas = await apiGet('/reservas/' + hoy());
-  if (reservas && reservas.length > 0) {
-    STATE.reservas = reservas;
-    // Actualizar estado de canchas según reservas reales
-    STATE.canchas.forEach(c => {
-      c.estado = estadoCanchaDemo(c.id, reservas);
-    });
-  }
-
-  // Cargar ventas de hoy
-  const ventas = await apiGet('/ventas/' + hoy());
-  if (ventas && ventas.length > 0) {
-    STATE.ventasBuffet = ventas;
-  }
-
+  // Mostrar datos demo inmediatamente mientras carga Firebase
   updateDashboard();
   renderCanchas();
   renderReservas();
   renderProductos();
+
+  // Intentar cargar datos reales de Firebase en segundo plano
+  try {
+    const config = await apiGet('/config');
+    if (config && config.nombre) {
+      STATE.config = { ...STATE.config, ...config };
+      const brand = document.getElementById('brand-tap');
+      if (brand) {
+        const parts = config.nombre.split(' ');
+        brand.innerHTML = parts[0] + (parts.length > 1 ? ' <span>' + parts.slice(1).join(' ') + '</span>' : '');
+      }
+    }
+
+    const productos = await apiGet('/productos');
+    if (productos && productos.length > 0) {
+      STATE.productos = productos;
+      renderProductos();
+    }
+
+    const reservas = await apiGet('/reservas/' + hoy());
+    if (reservas && reservas.length > 0) {
+      STATE.reservas = reservas;
+      STATE.canchas.forEach(c => {
+        c.estado = estadoCanchaDemo(c.id, reservas);
+      });
+      updateDashboard();
+      renderCanchas();
+      renderReservas();
+    }
+
+    const ventas = await apiGet('/ventas/' + hoy());
+    if (ventas && ventas.length > 0) {
+      STATE.ventasBuffet = ventas;
+      updateDashboard();
+    }
+  } catch(e) {
+    // Firebase no disponible, usar datos demo
+    console.log('Usando datos demo');
+  }
 }
 
 function updateClock() {
