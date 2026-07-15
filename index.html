@@ -1177,6 +1177,45 @@ body {
 .canchas-pkg.active .cp-label { color: var(--green); }
 .canchas-pkg .cp-precio { font-size: 11px; color: var(--text2); margin-top: 5px; font-weight: 600; }
 
+/* ── SELECTOR DE PREDIOS ── */
+.predio-selector {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 16px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.predio-selector::-webkit-scrollbar { display: none; }
+
+.predio-tab {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border2);
+  background: var(--surf2);
+  color: var(--text2);
+  transition: all 0.15s;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.predio-tab.active {
+  background: var(--green-d);
+  border-color: rgba(0,194,124,0.3);
+  color: var(--green);
+}
+
+.predio-tab.todos {
+  background: var(--blue-d);
+  border-color: rgba(59,130,246,0.3);
+  color: var(--blue-l, #60a5fa);
+}
+
 /* ── CIERRE DE CAJA ── */
 .cierre-btn {
   position: relative;
@@ -1352,6 +1391,8 @@ body {
         <div class="page-sub" id="dashDate">Hoy, cargando...</div>
       </div>
 
+      <div class="predio-selector" id="dash-predio-selector"></div>
+
       <div class="stats-grid">
         <div class="stat-card g">
           <div class="stat-label">Hoy</div>
@@ -1424,6 +1465,8 @@ body {
         <div class="page-sub">Estado en tiempo real</div>
       </div>
 
+      <div class="predio-selector" id="canchas-predio-selector"></div>
+
       <div class="canchas-grid" id="canchasGrid">
         <!-- Se genera dinámicamente -->
       </div>
@@ -1437,6 +1480,8 @@ body {
         <div class="page-title">Reservas</div>
         <div class="page-sub" id="reservas-fecha">Hoy</div>
       </div>
+
+      <div class="predio-selector" id="reservas-predio-selector"></div>
 
       <!-- NAV DÍA -->
       <div style="display:flex;align-items:center;gap:10px;padding:0 16px 16px">
@@ -1698,10 +1743,7 @@ body {
 
     <div class="form-group">
       <label class="form-label">Cancha</label>
-      <select class="form-select" id="res-cancha">
-        <option>Cancha 1 — Fútbol 7</option>
-        <option>Cancha 2 — Fútbol 7</option>
-      </select>
+      <select class="form-select" id="res-cancha"></select>
     </div>
     <div class="form-group">
       <label class="form-label">Nombre del cliente</label>
@@ -2185,11 +2227,15 @@ const STATE = {
   currentPago: 'efectivo',
   currentCancha: null,
   reservasFecha: new Date(),
-  canchas: [
-    { id: 1, nombre: 'Cancha 1', deporte: 'Fútbol 7', estado: 'libre', precioDia: 15000, precioNoche: 20000 },
-    { id: 2, nombre: 'Cancha 2', deporte: 'Fútbol 7', estado: 'libre', precioDia: 15000, precioNoche: 20000 }
+  predios: [
+    { id: 1, nombre: 'Predio 1', direccion: '' }
   ],
-  reservas: [],  // Se cargan desde Firebase
+  predioActivo: 1,
+  canchas: [
+    { id: 1, predioId: 1, nombre: 'Cancha 1', deporte: 'Fútbol 7', estado: 'libre', precioDia: 15000, precioNoche: 20000 },
+    { id: 2, predioId: 1, nombre: 'Cancha 2', deporte: 'Fútbol 7', estado: 'libre', precioDia: 15000, precioNoche: 20000 }
+  ],
+  reservas: [],
   productos: [
     { id: 1, nombre: 'Coca-Cola 500ml', precio: 1500, stock: 18, alerta: 6, emoji: '🥤' },
     { id: 2, nombre: 'Agua mineral', precio: 800, stock: 4, alerta: 5, emoji: '💧' },
@@ -2200,7 +2246,7 @@ const STATE = {
     { id: 7, nombre: 'Cerveza lata', precio: 2500, stock: 24, alerta: 6, emoji: '🍺' },
     { id: 8, nombre: 'Energizante', precio: 2800, stock: 2, alerta: 4, emoji: '🔋' },
   ],
-  ventasBuffet: [],  // Se cargan desde Firebase
+  ventasBuffet: [],
   carrito: {},
   historialCierres: [],
   config: {
@@ -2243,6 +2289,9 @@ async function initApp() {
   updateDashDate();
 
   // Mostrar datos demo inmediatamente mientras carga Firebase
+  renderSelectorPredios('dash-predio-selector', true);
+  renderSelectorPredios('canchas-predio-selector', false);
+  renderSelectorPredios('reservas-predio-selector', false);
   updateDashboard();
   renderCanchas();
   renderReservas();
@@ -2329,10 +2378,17 @@ function onFabClick() {
 // ═══════════════════════════════ DASHBOARD ═══
 
 function updateDashboard() {
-  const reservasHoy = STATE.reservas.filter(r => r.fecha === hoy());
+  const fechaHoy = hoy();
+  const todasHoy = STATE.reservas.filter(r => r.fecha === fechaHoy);
+  const canchasActivasPredio = STATE.predioActivo === 0
+    ? STATE.canchas.map(c => c.id)
+    : STATE.canchas.filter(c => c.predioId === STATE.predioActivo).map(c => c.id);
+  const reservasHoy = todasHoy.filter(r =>
+    STATE.predioActivo === 0 || canchasActivasPredio.includes(r.canchaId)
+  );
   const totalCanchas = reservasHoy.reduce((s, r) => s + r.precio, 0);
   const totalBuffet = STATE.ventasBuffet
-    .filter(v => v.fecha === hoy())
+    .filter(v => v.fecha === fechaHoy)
     .reduce((s, v) => s + v.total, 0);
   const totalHoy = totalCanchas + totalBuffet;
 
@@ -2340,7 +2396,8 @@ function updateDashboard() {
   document.getElementById('stat-semana').textContent = formatPeso(totalHoy * 3.2);
   document.getElementById('stat-reservas').textContent = reservasHoy.length;
 
-  const ocupadas = STATE.canchas.filter(c => c.estado === 'ocupada').length;
+  const canchasVista = getCanchasFiltradas();
+  const ocupadas = canchasVista.filter(c => c.estado === 'ocupada').length;
   document.getElementById('stat-canchas').textContent = `${ocupadas} cancha${ocupadas !== 1 ? 's' : ''} ocupada${ocupadas !== 1 ? 's' : ''}`;
   document.getElementById('stat-buffet').textContent = formatPeso(totalBuffet);
 
@@ -2352,7 +2409,7 @@ function updateDashboard() {
     else if (r.pago === 'mercadopago') mp.mercadopago += r.precio;
     else mp.otras += r.precio;
   });
-  STATE.ventasBuffet.filter(v => v.fecha === hoy()).forEach(v => {
+  STATE.ventasBuffet.filter(v => v.fecha === fechaHoy).forEach(v => {
     if (v.pago === 'efectivo') mp.efectivo += v.total;
     else if (v.pago === 'transferencia') mp.transferencia += v.total;
     else if (v.pago === 'mercadopago') mp.mercadopago += v.total;
@@ -2366,8 +2423,8 @@ function updateDashboard() {
 
   // Próximas reservas
   const ahora = new Date();
-  const proximas = STATE.reservas
-    .filter(r => r.fecha === hoy() && r.hora > ahora.toTimeString().slice(0, 5))
+  const proximas = todasHoy
+    .filter(r => r.hora > ahora.toTimeString().slice(0, 5))
     .sort((a, b) => a.hora.localeCompare(b.hora))
     .slice(0, 3);
 
@@ -2396,7 +2453,14 @@ function updateDashboard() {
 
 function renderCanchas() {
   const grid = document.getElementById('canchasGrid');
-  grid.innerHTML = STATE.canchas.map(c => {
+  const canchas = getCanchasFiltradas();
+
+  if (canchas.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--text3)">Sin canchas en este predio</div>';
+    return;
+  }
+
+  grid.innerHTML = canchas.map(c => {
     const estadoLabel = { libre: 'Libre', ocupada: 'Ocupada', proxima: 'Próxima reserva', fuera: 'Fuera de servicio' };
     const reserva = STATE.reservas.find(r => r.canchaId === c.id && r.fecha === hoy() && (c.estado === 'ocupada' || c.estado === 'proxima'));
 
@@ -2435,8 +2499,12 @@ function renderReservas() {
   document.getElementById('reservas-fecha').textContent = fechaStr;
 
   const fechaKey = STATE.reservasFecha.toISOString().slice(0, 10);
-  const reservasDelDia = STATE.reservas
-    .filter(r => r.fecha === fechaKey)
+  const todasReservas = STATE.reservas.filter(r => r.fecha === fechaKey);
+  const canchasDelPredio = STATE.predioActivo === 0
+    ? STATE.canchas.map(c => c.id)
+    : STATE.canchas.filter(c => c.predioId === STATE.predioActivo).map(c => c.id);
+  const reservasDelDia = todasReservas
+    .filter(r => STATE.predioActivo === 0 || canchasDelPredio.includes(r.canchaId))
     .sort((a, b) => a.hora.localeCompare(b.hora));
 
   const list = document.getElementById('reservas-list');
@@ -2479,6 +2547,23 @@ function abrirReserva() {
   document.getElementById('res-hora').value = ahoraStr;
   document.getElementById('res-nombre').value = '';
   document.getElementById('res-tel').value = '';
+
+  // Cargar canchas del predio activo
+  const canchas = STATE.predioActivo === 0
+    ? STATE.canchas
+    : STATE.canchas.filter(c => c.predioId === STATE.predioActivo);
+
+  const select = document.getElementById('res-cancha');
+  if (select) {
+    select.innerHTML = canchas.map(c => {
+      const predio = STATE.predios.find(p => p.id === c.predioId);
+      const label = STATE.predios.length > 1
+        ? `${predio?.nombre || ''} — ${c.nombre} — ${c.deporte}`
+        : `${c.nombre} — ${c.deporte}`;
+      return `<option value="${c.id}">${label}</option>`;
+    }).join('');
+  }
+
   calcularPrecio();
   openModal('modal-reserva');
 }
@@ -2504,8 +2589,8 @@ async function guardarReserva() {
   const fecha = document.getElementById('res-fecha').value;
   const hora = document.getElementById('res-hora').value;
   const duracion = parseInt(document.getElementById('res-duracion').value);
-  const canchaIdx = document.getElementById('res-cancha').selectedIndex;
-  const canchaId = STATE.canchas[canchaIdx]?.id || 1;
+  const canchaSelect = document.getElementById('res-cancha');
+  const canchaId = parseInt(canchaSelect.value) || STATE.canchas[0]?.id || 1;
 
   if (!nombre || !fecha || !hora) { showToast('Completá todos los campos'); return; }
 
@@ -2666,7 +2751,14 @@ async function guardarProducto() {
 // ═══════════════════════════════ WHATSAPP ═══
 
 function generarResumen() {
-  const reservasHoy = STATE.reservas.filter(r => r.fecha === hoy());
+  const fechaHoy = hoy();
+  const todasHoy = STATE.reservas.filter(r => r.fecha === fechaHoy);
+  const canchasActivasPredio = STATE.predioActivo === 0
+    ? STATE.canchas.map(c => c.id)
+    : STATE.canchas.filter(c => c.predioId === STATE.predioActivo).map(c => c.id);
+  const reservasHoy = todasHoy.filter(r =>
+    STATE.predioActivo === 0 || canchasActivasPredio.includes(r.canchaId)
+  );
   const totalCanchas = reservasHoy.reduce((s, r) => s + r.precio, 0);
   const totalBuffet = STATE.ventasBuffet.filter(v => v.fecha === hoy()).reduce((s, v) => s + v.total, 0);
   const totalDia = totalCanchas + totalBuffet;
@@ -2882,26 +2974,13 @@ function selectCanchas(btn, cantidad) {
   const deporte = document.getElementById('op-deporte')?.value || 'futbol7';
   const nombres = { futbol7: 'Fútbol 7', futbol5: 'Fútbol 5', futbol11: 'Fútbol 11', padel: 'Pádel', tenis: 'Tenis' };
   const nombreDeporte = nombres[deporte] || 'Deporte';
+  const precioDia = STATE.config.precioDia || 15000;
+  const precioNoche = Math.round(precioDia * 1.33);
 
-  // Ajustar array de canchas al nuevo total
-  const actual = STATE.canchas.length;
-  if (cantidad > actual) {
-    for (let i = actual + 1; i <= cantidad; i++) {
-      STATE.canchas.push({
-        id: i,
-        nombre: `Cancha ${i}`,
-        deporte: nombreDeporte,
-        estado: 'libre',
-        precioDia: STATE.config.precioDia || 15000,
-        precioNoche: (STATE.config.precioDia || 15000) * 1.33
-      });
-    }
-  } else if (cantidad < actual) {
-    STATE.canchas = STATE.canchas.slice(0, cantidad);
-  }
-
-  renderCanchas();
-  showToast(`${cantidad} canchas habilitadas`);
+  STATE.config.canchasPorPredio = cantidad;
+  generarCanchas(STATE.predios, cantidad, nombreDeporte, precioDia, precioNoche);
+  guardarConfig();
+  showToast(`${cantidad} canchas por predio · ${STATE.predios.length} predio${STATE.predios.length > 1 ? 's' : ''}`);
 }
 
 // ═══════════════════════════════ LOGIN GOOGLE ═══
@@ -2971,10 +3050,120 @@ function eliminarProducto() {
 function selectPredio(btn, cantidad) {
   document.querySelectorAll('.predio-pkg').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  STATE.config.predios = cantidad;
-  showToast(`${cantidad} predio${cantidad > 1 ? 's' : ''} habilitado${cantidad > 1 ? 's' : ''}`);
+  STATE.config.cantPredios = cantidad;
+
+  // Generar array de predios
+  const prediosActuales = STATE.predios.length;
+  if (cantidad > prediosActuales) {
+    for (let i = prediosActuales + 1; i <= cantidad; i++) {
+      STATE.predios.push({ id: i, nombre: `Predio ${i}`, direccion: '' });
+    }
+  } else {
+    STATE.predios = STATE.predios.slice(0, cantidad);
+  }
+
+  // Regenerar canchas con la nueva cantidad de predios
+  const deporte = document.getElementById('op-deporte')?.value || 'futbol7';
+  const nombres = { futbol7: 'Fútbol 7', futbol5: 'Fútbol 5', futbol11: 'Fútbol 11', padel: 'Pádel', tenis: 'Tenis' };
+  const canchasPorPredio = STATE.config.canchasPorPredio || 2;
+  const precioDia = STATE.config.precioDia || 15000;
+  generarCanchas(STATE.predios, canchasPorPredio, nombres[deporte], precioDia, Math.round(precioDia * 1.33));
+
+  guardarConfig();
+  showToast(`${cantidad} predio${cantidad > 1 ? 's' : ''} · ${canchasPorPredio} canchas c/u`);
 }
 
+
+
+// ═══════════════════════════════ PREDIOS ═══
+
+function renderSelectorPredios(containerId, incluirTodos = false) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+
+  // Solo mostrar selector si hay más de un predio
+  if (STATE.predios.length <= 1) {
+    el.style.display = 'none';
+    return;
+  }
+
+  el.style.display = 'flex';
+  let html = '';
+
+  if (incluirTodos) {
+    const activo = STATE.predioActivo === 0;
+    html += `<div class="predio-tab ${activo ? 'todos active' : ''}" onclick="cambiarPredio(0, '${containerId}')">Todos</div>`;
+  }
+
+  STATE.predios.forEach(p => {
+    const activo = STATE.predioActivo === p.id;
+    html += `<div class="predio-tab ${activo ? 'active' : ''}" onclick="cambiarPredio(${p.id}, '${containerId}')">${p.nombre}</div>`;
+  });
+
+  el.innerHTML = html;
+}
+
+function cambiarPredio(predioId, containerId) {
+  STATE.predioActivo = predioId;
+
+  // Actualizar todos los selectores
+  ['dash-predio-selector', 'canchas-predio-selector', 'reservas-predio-selector'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.querySelectorAll('.predio-tab').forEach(tab => {
+      tab.classList.remove('active', 'todos');
+      const tabId = parseInt(tab.getAttribute('onclick').match(/\d+/)?.[0]);
+      if (tabId === predioId) {
+        tab.classList.add('active');
+        if (predioId === 0) tab.classList.add('todos');
+      }
+    });
+  });
+
+  updateDashboard();
+  renderCanchas();
+  renderReservas();
+}
+
+function getCanchasFiltradas() {
+  if (STATE.predioActivo === 0) return STATE.canchas;
+  return STATE.canchas.filter(c => c.predioId === STATE.predioActivo);
+}
+
+function getReservasFiltradas(fecha) {
+  const fechaStr = fecha || hoy();
+  const reservas = STATE.reservas.filter(r => r.fecha === fechaStr);
+  if (STATE.predioActivo === 0) return reservas;
+  const canchasDelPredio = STATE.canchas
+    .filter(c => c.predioId === STATE.predioActivo)
+    .map(c => c.id);
+  return reservas.filter(r => canchasDelPredio.includes(r.canchaId));
+}
+
+function generarCanchas(predios, canchasPorPredio, deporte, precioDia, precioNoche) {
+  const nuevasCanchas = [];
+  let canchaId = 1;
+
+  predios.forEach(predio => {
+    for (let i = 1; i <= canchasPorPredio; i++) {
+      nuevasCanchas.push({
+        id: canchaId++,
+        predioId: predio.id,
+        nombre: `Cancha ${i}`,
+        deporte: deporte || 'Fútbol 7',
+        estado: 'libre',
+        precioDia: precioDia || 15000,
+        precioNoche: precioNoche || 20000
+      });
+    }
+  });
+
+  STATE.canchas = nuevasCanchas;
+  renderCanchas();
+  renderSelectorPredios('dash-predio-selector', true);
+  renderSelectorPredios('canchas-predio-selector', false);
+  renderSelectorPredios('reservas-predio-selector', false);
+}
 
 // ═══════════════════════════════ CIERRE DE CAJA ═══
 
