@@ -52,13 +52,14 @@ body {
   position: fixed;
   top: 0; left: 0; right: 0;
   height: 60px;
-  background: var(--surf1);
-  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #1c2030 0%, #161a24 100%);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
   display: flex;
   align-items: center;
   padding: 0 20px;
   justify-content: space-between;
   z-index: 100;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
 }
 
 .topbar-brand {
@@ -110,14 +111,16 @@ body {
   position: fixed;
   bottom: 0; left: 0; right: 0;
   height: var(--nav-h);
-  background: var(--surf1);
+  background: linear-gradient(180deg, #161a24 0%, #111520 100%);
   border-top: 1px solid var(--border);
+  border-top-color: rgba(255,255,255,0.08);
   display: flex;
   align-items: center;
   justify-content: space-around;
   padding: 0 8px;
   padding-bottom: env(safe-area-inset-bottom);
   z-index: 100;
+  box-shadow: 0 -8px 24px rgba(0,0,0,0.4);
 }
 
 .nav-btn {
@@ -175,10 +178,13 @@ body {
 
 /* ── CARDS ── */
 .card {
-  background: var(--surf1);
+  background: linear-gradient(160deg, #1c2030 0%, #161a24 100%);
   border: 1px solid var(--border);
   border-radius: var(--r);
-  box-shadow: var(--shadow);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.04) inset,
+    0 6px 20px rgba(0,0,0,0.35),
+    0 2px 6px rgba(0,0,0,0.15);
 }
 
 .card-body { padding: 16px; }
@@ -203,12 +209,16 @@ body {
 }
 
 .stat-card {
-  background: var(--surf1);
+  background: linear-gradient(160deg, #1c2030 0%, #161a24 100%);
   border: 1px solid var(--border);
   border-radius: var(--r);
   padding: 16px;
   position: relative;
   overflow: hidden;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.04) inset,
+    0 6px 20px rgba(0,0,0,0.35),
+    0 2px 6px rgba(0,0,0,0.2);
 }
 
 .stat-card::after {
@@ -280,23 +290,37 @@ body {
 
 .cancha-card.libre {
   background: linear-gradient(135deg, #0a2a1a, #0d3322);
-  border-color: rgba(0,194,124,0.3);
+  border-color: rgba(0,194,124,0.35);
+  box-shadow:
+    0 1px 0 rgba(0,194,124,0.08) inset,
+    0 8px 24px rgba(0,0,0,0.4),
+    0 0 0 1px rgba(0,194,124,0.08),
+    0 4px 12px rgba(0,194,124,0.1);
 }
 
 .cancha-card.ocupada {
   background: linear-gradient(135deg, #2a0a0a, #331010);
-  border-color: rgba(239,68,68,0.3);
+  border-color: rgba(239,68,68,0.35);
+  box-shadow:
+    0 1px 0 rgba(239,68,68,0.08) inset,
+    0 8px 24px rgba(0,0,0,0.4),
+    0 4px 12px rgba(239,68,68,0.1);
 }
 
 .cancha-card.proxima {
   background: linear-gradient(135deg, #2a1e0a, #332510);
-  border-color: rgba(245,166,35,0.3);
+  border-color: rgba(245,166,35,0.35);
+  box-shadow:
+    0 1px 0 rgba(245,166,35,0.08) inset,
+    0 8px 24px rgba(0,0,0,0.4),
+    0 4px 12px rgba(245,166,35,0.1);
 }
 
 .cancha-card.fuera {
   background: var(--surf2);
   border-color: var(--border);
   opacity: 0.6;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
 .cancha-status {
@@ -381,48 +405,94 @@ body {
   align-items: center;
   justify-content: center;
   gap: 7px;
-  padding: 13px 20px;
+  padding: 14px 20px;
   border-radius: var(--r-sm);
   font-size: 15px;
   font-weight: 600;
   font-family: 'DM Sans', sans-serif;
   cursor: pointer;
   border: none;
-  transition: all 0.15s;
+  transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
   -webkit-tap-highlight-color: transparent;
   white-space: nowrap;
+  position: relative;
 }
 
-.btn:active { transform: scale(0.96); }
+.btn:hover { transform: translateY(-2px); }
+.btn:active { transform: translateY(1px) scale(0.97); }
 
 .btn-primary {
-  background: var(--green);
+  background: linear-gradient(180deg, #00d688 0%, #00b872 100%);
   color: #fff;
-  box-shadow: 0 4px 16px rgba(0,194,124,0.3);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.15) inset,
+    0 6px 20px rgba(0,194,124,0.45),
+    0 2px 6px rgba(0,194,124,0.3);
   width: 100%;
 }
 
-.btn-primary:active { background: #00a868; }
+.btn-primary:hover {
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.15) inset,
+    0 10px 28px rgba(0,194,124,0.5),
+    0 4px 10px rgba(0,194,124,0.35);
+}
+
+.btn-primary:active {
+  background: linear-gradient(180deg, #00b872 0%, #00a060 100%);
+  box-shadow: 0 2px 8px rgba(0,194,124,0.3);
+}
 
 .btn-secondary {
-  background: var(--surf2);
+  background: linear-gradient(180deg, #2a3049 0%, #1e2436 100%);
   color: var(--text);
-  border: 1px solid var(--border2);
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.06) inset,
+    0 4px 14px rgba(0,0,0,0.35),
+    0 2px 4px rgba(0,0,0,0.2);
   width: 100%;
+}
+
+.btn-secondary:hover {
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.08) inset,
+    0 8px 20px rgba(0,0,0,0.4),
+    0 3px 6px rgba(0,0,0,0.25);
+  border-color: rgba(255,255,255,0.15);
 }
 
 .btn-danger {
-  background: var(--red-d);
+  background: linear-gradient(180deg, rgba(239,68,68,0.18) 0%, rgba(239,68,68,0.1) 100%);
   color: var(--red);
-  border: 1px solid rgba(239,68,68,0.2);
+  border: 1px solid rgba(239,68,68,0.25);
+  box-shadow:
+    0 4px 14px rgba(239,68,68,0.15),
+    0 2px 4px rgba(0,0,0,0.2);
   width: 100%;
 }
 
+.btn-danger:hover {
+  box-shadow:
+    0 8px 20px rgba(239,68,68,0.25),
+    0 3px 6px rgba(0,0,0,0.2);
+}
+
 .btn-wa {
-  background: #25D366;
+  background: linear-gradient(180deg, #2edb6f 0%, #20c05a 100%);
   color: #fff;
-  box-shadow: 0 4px 16px rgba(37,211,102,0.3);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.15) inset,
+    0 6px 20px rgba(37,211,102,0.45),
+    0 2px 6px rgba(37,211,102,0.3);
   width: 100%;
+}
+
+.btn-wa:hover {
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.15) inset,
+    0 10px 28px rgba(37,211,102,0.5),
+    0 4px 10px rgba(37,211,102,0.35);
 }
 
 .btn-sm {
@@ -445,20 +515,32 @@ body {
   bottom: calc(var(--nav-h) + 16px);
   right: 16px;
   width: 56px; height: 56px;
-  background: var(--green);
+  background: linear-gradient(180deg, #00d688 0%, #00b070 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 24px;
   cursor: pointer;
-  box-shadow: 0 4px 20px rgba(0,194,124,0.4);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.2) inset,
+    0 8px 24px rgba(0,194,124,0.5),
+    0 4px 10px rgba(0,194,124,0.35),
+    0 2px 4px rgba(0,0,0,0.3);
   z-index: 90;
   border: none;
-  transition: transform 0.15s;
+  transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.fab:active { transform: scale(0.9); }
+.fab:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.2) inset,
+    0 14px 32px rgba(0,194,124,0.6),
+    0 6px 14px rgba(0,194,124,0.4);
+}
+
+.fab:active { transform: scale(0.9); box-shadow: 0 4px 12px rgba(0,194,124,0.3); }
 
 /* ── TAGS ── */
 .tag {
@@ -522,8 +604,9 @@ body {
 .modal-overlay.open { display: flex; }
 
 .modal {
-  background: var(--surf1);
-  border: 1px solid var(--border2);
+  background: linear-gradient(160deg, #1e2438 0%, #161a24 100%);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-bottom: none;
   border-radius: 24px 24px 0 0;
   padding: 24px 20px;
   padding-bottom: calc(24px + env(safe-area-inset-bottom));
@@ -531,6 +614,7 @@ body {
   max-height: 90vh;
   overflow-y: auto;
   animation: slideUp 0.25s ease;
+  box-shadow: 0 -12px 40px rgba(0,0,0,0.5);
 }
 
 @keyframes slideUp {
@@ -1219,11 +1303,10 @@ body {
 }
 </style>
 
-<!-- Firebase SDK -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-
+<!-- Firebase SDK compat (versión global, sin modules) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script>
   const firebaseConfig = {
     apiKey: "AIzaSyCEMzRkk0LEeV4obPUHPvnBhaBM95ZEnCs",
     authDomain: "pelotear-1f37e.firebaseapp.com",
@@ -1233,75 +1316,32 @@ body {
     appId: "1:822223841367:web:f23b1953bfed3d0ef05b12"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const provider = new GoogleAuthProvider();
+  firebase.initializeApp(firebaseConfig);
+  const fbAuth = firebase.auth();
+  const fbProvider = new firebase.auth.GoogleAuthProvider();
 
   // Escuchar cambios de sesión
-  onAuthStateChanged(auth, (user) => {
+  fbAuth.onAuthStateChanged(function(user) {
     if (user) {
-      // Usuario logueado — mostrar app
       window.CURRENT_USER = user;
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('app').style.display = 'block';
 
-      // Actualizar avatar con iniciales reales
       const nombre = user.displayName || 'Usuario';
-      const iniciales = nombre.split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase();
-      document.querySelectorAll('.avatar').forEach(a => a.textContent = iniciales);
-
-      // Actualizar perfil modal
-      const nombreEl = document.querySelector('#modal-perfil .modal-title + div + div');
-      if (nombreEl) nombreEl.textContent = nombre;
+      const iniciales = nombre.split(' ').map(function(n){ return n[0]; }).slice(0,2).join('').toUpperCase();
+      document.querySelectorAll('.avatar').forEach(function(a){ a.textContent = iniciales; });
 
       if (!window.APP_INITIALIZED) {
         window.APP_INITIALIZED = true;
         initApp();
       }
     } else {
-      // No logueado — mostrar login
       window.CURRENT_USER = null;
       window.APP_INITIALIZED = false;
       document.getElementById('loginScreen').style.display = 'flex';
       document.getElementById('app').style.display = 'none';
     }
   });
-
-  // Login con Google
-  window.doLoginGoogle = async function() {
-    try {
-      await signInWithPopup(auth, provider);
-      // onAuthStateChanged se encarga del resto
-    } catch (err) {
-      if (err.code !== 'auth/popup-closed-by-user') {
-        showToast('Error al iniciar sesión');
-        console.error(err);
-      }
-    }
-  };
-
-  // Login con email (demo rápida)
-  window.doLogin = function() {
-    const user = document.getElementById('loginUser').value.trim();
-    const pass = document.getElementById('loginPass').value.trim();
-    if (!user || !pass) { showToast('Completá usuario y contraseña'); return; }
-    // Por ahora acepta cualquier combinación como demo
-    // En producción: firebase signInWithEmailAndPassword
-    window.CURRENT_USER = { displayName: user, email: user };
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    if (!window.APP_INITIALIZED) {
-      window.APP_INITIALIZED = true;
-      initApp();
-    }
-  };
-
-  // Logout
-  window.doLogout = async function() {
-    await signOut(auth);
-    closeModal('modal-perfil');
-    // onAuthStateChanged muestra el login automáticamente
-  };
 </script>
 </head>
 <body>
@@ -2214,7 +2254,6 @@ const STATE = {
 
 // ═══════════════════════════════ LOGIN ═══
 
-// Login y logout manejados por Firebase Auth (ver bloque <script type="module"> en el head)
 function doLogin() {
   const user = document.getElementById('loginUser').value.trim();
   const pass = document.getElementById('loginPass').value.trim();
@@ -2228,12 +2267,10 @@ function doLogin() {
   }
 }
 
-function doLogout() {
-  if (window.doLogout._firebase) return; // manejado por Firebase
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('loginUser').value = '';
-  document.getElementById('loginPass').value = '';
+async function doLogout() {
+  try {
+    if (typeof fbAuth !== 'undefined') await fbAuth.signOut();
+  } catch(e) {}
   closeModal('modal-perfil');
 }
 
@@ -2908,7 +2945,16 @@ function selectCanchas(btn, cantidad) {
 
 // ═══════════════════════════════ LOGIN GOOGLE ═══
 
-// doLoginGoogle manejado por Firebase Auth en el head
+async function doLoginGoogle() {
+  try {
+    await fbAuth.signInWithPopup(fbProvider);
+  } catch (err) {
+    if (err.code !== 'auth/popup-closed-by-user') {
+      showToast('Error al iniciar sesión con Google');
+      console.error(err);
+    }
+  }
+}
 
 // ═══════════════════════════════ EDITAR / ELIMINAR PRODUCTO ═══
 
@@ -3098,40 +3144,3 @@ function renderHistorialCierres() {
 }
 
 function enviarResumenCierre(cierre) {
-  const t = cierre.totales;
-  const esFinal = cierre.tipo === 'final';
-  const fecha = new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
-
-  const texto = `${esFinal ? '🔐' : '🔒'} *Cierre ${esFinal ? 'final' : 'parcial'} de caja*
-📅 ${fecha} — ${cierre.hora}
-👤 ${cierre.empleado}
-
-⚽ Alquileres: ${formatPeso(t.alquileres)}
-🥤 Buffet: ${formatPeso(t.buffet)}
-
-💵 Efectivo: ${formatPeso(t.mp.efectivo)}
-🔄 Transferencia: ${formatPeso(t.mp.transferencia)}
-💙 Mercado Pago: ${formatPeso(t.mp.mercadopago)}
-📱 Otras billeteras: ${formatPeso(t.mp.otras)}
-
-━━━━━━━━━━━━━━
-💰 *Total: ${formatPeso(t.total)}*
-📋 Reservas: ${t.cantReservas}`;
-
-  const wa = STATE.config.wa || '';
-  const url = `https://wa.me/${wa.replace(/\D/g, '')}?text=${encodeURIComponent(texto)}`;
-  window.open(url, '_blank');
-}
-
-async function hacerBackup(cierre) {
-  const fechaStr = hoy();
-  const backup = {
-    version: '1.0',
-    fecha: fechaStr,
-    generadoEn: new Date().toISOString(),
-    complejo: STATE.config.nombre,
-    state: {
-      canchas: STATE.canchas,
-      reservas: STATE.reservas.filter(r => r.fecha === fechaStr),
-      ventasBuffet: STATE.ventasBuffet.filter(v => v.fecha === fechaStr),
-      producto
