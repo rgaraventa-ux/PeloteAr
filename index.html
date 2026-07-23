@@ -1340,6 +1340,20 @@ body {
   margin-bottom: 16px;
   white-space: pre-wrap;
 }
+
+/* Dark mode toggle */
+body.light-mode {
+  --bg:     #f8fafc;
+  --surf1:  #ffffff;
+  --surf2:  #f1f5f9;
+  --surf3:  #e2e8f0;
+  --border: rgba(0,0,0,0.08);
+  --border2:rgba(0,0,0,0.12);
+  --text:   #0f172a;
+  --text2:  #475569;
+  --text3:  #94a3b8;
+}
+
 </style>
 
 <!-- Firebase carga al final del body -->
@@ -1582,6 +1596,9 @@ body {
       <div class="page-head">
         <div class="page-title">Caja</div>
         <div class="page-sub">Cierres y backup del día</div>
+      </div>
+      <div style="margin:0 16px 12px;display:flex;gap:8px;">
+        <button class="btn btn-secondary btn-sm" onclick="exportarCSVReservas()" style="flex:1">📊 Exportar CSV</button>
       </div>
 
       <!-- RESUMEN ACTUAL -->
@@ -1913,7 +1930,8 @@ body {
       <div style="font-size:17px;font-weight:700" id="perfil-nombre">Usuario</div>
       <div style="font-size:13px;color:var(--text2);margin-top:4px" id="perfil-email">-</div>
     </div>
-    <button class="btn btn-danger" onclick="doLogout()">Cerrar sesión</button>
+    <button class="btn btn-secondary" onclick="document.body.classList.toggle('light-mode')" style="margin-bottom:8px">🌙 / ☀️ Tema</button>
+      <button class="btn btn-danger" onclick="doLogout()">Cerrar sesión</button>
     <div style="margin-top:10px">
       <button class="btn btn-secondary" onclick="closeModal('modal-perfil')">Cancelar</button>
     </div>
@@ -3401,6 +3419,53 @@ window.addEventListener('load', () => {
       document.getElementById('app').style.display = 'none';
     }
   });
+
+  // P5: Log de errores en Firestore
+  var dbPelotear = firebase.firestore();
+  function logError(origen, mensaje, extra) {
+    try {
+      dbPelotear.collection('errores').add({
+        origen, mensaje,
+        extra: extra ? JSON.stringify(extra) : null,
+        app: 'pelotear',
+        ts: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    } catch(e) { console.error('logError falló:', e.message); }
+  }
+
+  // P2: Exportar CSV reservas del día
+  function exportarCSVReservas() {
+    const fechaStr = hoy();
+    const reservas = STATE.reservas.filter(r => r.fecha === fechaStr);
+    if (!reservas.length) { showToast('No hay reservas hoy para exportar'); return; }
+    const headers = ['Hora','Duración','Cancha','Deporte','Cliente','Teléfono','Precio','Pago'];
+    const filas = reservas.map(r => {
+      const cancha = STATE.canchas.find(c => c.id === r.canchaId);
+      return [
+        r.hora||'', (r.duracion||60)+'min',
+        cancha ? cancha.nombre : '',
+        cancha ? cancha.deporte : '',
+        r.nombre||'', r.tel||'',
+        r.precio||0, r.pago||''
+      ].map(v => '"'+String(v).replace(/"/g,'""')+'"').join(',');
+    });
+    const csv = [headers.join(','), ...filas].join('\n');
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href=url; a.download='pelotear-reservas-'+fechaStr+'.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('✅ CSV exportado');
+  }
+
+
+  // P3: Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/PeloteAr/sw-pelotear.js')
+      .catch(e => console.warn('SW error:', e));
+  }
+
 </script>
 </body>
 </html>
